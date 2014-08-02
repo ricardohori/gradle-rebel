@@ -1,0 +1,97 @@
+import org.grails.gradle.plugin.tasks.GrailsTask
+
+final langLevel = 1.6
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath group: 'org.zeroturnaround', name: 'gradle-jrebel-plugin', version: '1.1.2'
+    }
+}
+
+allprojects {
+    apply plugin: 'idea'
+
+    group = 'br.com.playground.gradle'
+    version = '1.0'
+
+    apply plugin: 'rebel'
+}
+
+subprojects {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+}
+
+project(':rebel-lang') {
+    apply plugin: 'groovy'
+
+    sourceCompatibility = langLevel
+    targetCompatibility = langLevel
+
+    dependencies {
+        compile 'org.apache.commons:commons-lang3:3.3.2'
+        compile 'org.codehaus.groovy:groovy-all:2.1.9'
+        testCompile 'org.spockframework:spock-core:0.7-groovy-2.0'
+    }
+
+    jar.dependsOn(generateRebel)
+}
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.grails:grails-gradle-plugin:2.1.0"
+    }
+}
+
+project(':rebel-web') {
+
+    apply plugin: 'grails'
+
+    repositories {
+        grails.central() //creates a maven repo for the Grails Central repository (Core libraries and plugins)
+    }
+
+    grails {
+        grailsVersion = '2.1.5'
+        groovyVersion = '1.8.8'
+        springLoadedVersion = '1.5.1'
+    }
+
+    dependencies {
+        compile project(':rebel-lang')
+        bootstrap "org.grails.plugins:jetty:2.0.3" // No container is deployed by default, so add this
+    }
+
+    run{
+        jvmOptions {
+            minHeapSize = '512m'
+            maxHeapSize = '1g'
+            jvmArgs([
+                    '-XX:MaxPermSize=512m',
+                    '-javaagent:/home/rfh/jrebel/jrebel.jar'
+//                    '-Xdebug',
+//                    '-Xnoagent',
+//                    '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005'
+            ])
+            systemProperty 'rebel.spring_plugin', 'true'
+            systemProperty 'rebel.grails_plugin', 'true'
+        }
+    }
+}
+
+
+idea {
+    project {
+        jdkName = langLevel
+        languageLevel = langLevel
+    }
+}
